@@ -101,12 +101,18 @@
         .bg-red { background-color: #FCA5A5; color: transparent; }
         .bg-blue { background-color: #93C5FD; color: transparent; }
         .row-plan { background-color: #F9FAFB; }
+        
+        /* 備考欄のテキストエリア化 */
         .note-input {
             width: 280px; 
+            min-height: 40px;
             padding: 6px;
             border: 1px solid #D1D5DB;
             border-radius: 3px;
             font-size: 0.95em;
+            font-family: inherit;
+            resize: vertical; /* 縦方向へのリサイズを許可 */
+            box-sizing: border-box;
         }
         .row-today td { border-top: 2px solid var(--primary); border-bottom: 2px solid var(--primary); }
 
@@ -396,7 +402,7 @@
             </table>
         </div>
         <div style="margin-top: 15px; display: flex; gap: 10px;">
-            <button onclick="window.saveData(true)">変更を保存する</button>
+            <button onclick="window.saveData()">変更を保存する</button>
         </div>
     </div>
 
@@ -470,9 +476,14 @@
 
         <h3 style="margin-top: 30px;">進行度タイムライン</h3>
         <p style="font-size:0.8em; color:#666;">※丸い点を右クリックで削除。</p>
-        <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-            <button onclick="window.setTimelineMode('all')">すべての参考書を1本化</button>
-            <button onclick="window.setTimelineMode('byBook')" class="btn-secondary">参考書ごとに分ける</button>
+        
+        <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button onclick="window.setTimelineMode('all')">すべて</button>
+            <button onclick="window.setTimelineMode('byBook')" class="btn-secondary">参考書ごと</button>
+            <div style="margin-left: 20px; display: flex; align-items: center; gap: 10px;">
+                <label for="timelineScaleSlider" style="font-size:0.85em; font-weight:bold; color: #4B5563;">軸の縮尺:</label>
+                <input type="range" id="timelineScaleSlider" min="10" max="150" value="35" oninput="window.renderTimeline()" style="cursor: pointer;">
+            </div>
         </div>
 
         <div class="timeline-scroll-container" id="timelineScrollContainer"></div>
@@ -482,7 +493,6 @@
 <!-- Cloud Firestore (v10) の読み込み -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    // Realtime Database ではなく Firestore をインポート
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -494,10 +504,8 @@
         appId: "1:154325503119:web:ba327855038538576cb4fa"
     };
 
-    // Firebase 初期化
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    // studyDataコレクションの main ドキュメントにすべて保存する
     const docRef = doc(db, "studyData", "main"); 
 
     let appData = {
@@ -518,9 +526,6 @@
         else el.classList.remove('sync-error');
     }
 
-    // -----------------------------------------------------------------
-    // クラウド処理: GET (ページ読み込み時に1回だけ)
-    // -----------------------------------------------------------------
     async function loadData() {
         updateStatus("☁️ クラウドから取得中...");
         try {
@@ -540,31 +545,22 @@
         } catch (error) {
             console.error("Firestore GET Error:", error);
             updateStatus("⚠️ 読込エラー: " + (error.message.includes("permission") ? "DBアクセス権限がありません" : error.message), true);
-            // エラー時も最低限ローカルで描画
             renderAll(); 
         }
     }
 
-    // -----------------------------------------------------------------
-    // クラウド処理: PUT (更新アクションのたびに実行)
-    // -----------------------------------------------------------------
-    async function saveData(showAlert = false) {
+    async function saveData() {
         updateStatus("☁️ 保存中...");
         try {
             await setDoc(docRef, appData);
             updateStatus("☁️ 同期済み");
-            if (showAlert) alert('保存が完了しました');
-            renderAll();
+            renderAll(); // アラートを削除
         } catch (error) {
             console.error("Firestore PUT Error:", error);
             updateStatus("⚠️ 保存エラー: " + (error.message.includes("permission") ? "DBアクセス権限がありません" : error.message), true);
-            alert("保存に失敗しました。詳細: " + error.message);
         }
     }
 
-    // -----------------------------------------------------------------
-    // UI・描画処理群
-    // -----------------------------------------------------------------
     function isJapaneseHoliday(date) {
         const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate(), day = date.getDay();
         if (m === 1 && d === 1) return true;
@@ -675,9 +671,9 @@
                 if (type === '計画') {
                     const tdNote = document.createElement('td');
                     tdNote.rowSpan = 2;
-                    const noteInput = document.createElement('input');
-                    noteInput.type = 'text';
+                    const noteInput = document.createElement('textarea'); // 備考をtextareaに変更
                     noteInput.className = 'note-input';
+                    noteInput.rows = 2;
                     noteInput.placeholder = "メモ等";
                     noteInput.value = appData.notes[dateStr] || '';
                     noteInput.addEventListener('change', (e) => {
@@ -730,13 +726,13 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 appData.books.push({ id: 'book_' + Date.now(), subject, title, image: e.target.result });
-                saveData(); // 保存して同期
+                saveData(); 
                 clearBookForm();
             };
             reader.readAsDataURL(imageFile);
         } else {
             appData.books.push({ id: 'book_' + Date.now(), subject, title, image: '' });
-            saveData(); // 保存して同期
+            saveData(); 
             clearBookForm();
         }
     }
@@ -756,7 +752,7 @@
         if (!startDate || !endDate) return alert('期間を入力してください');
 
         appData.plans.push({ id: 'plan_' + Date.now(), bookId, objective, startDate, endDate });
-        saveData(); // 保存して同期
+        saveData(); 
         document.getElementById('planObjective').value = '';
     }
 
@@ -767,7 +763,7 @@
             appData.books = appData.books.filter(b => b.id !== bookId);
             appData.plans = appData.plans.filter(p => p.bookId !== bookId);
             appData.progress = appData.progress.filter(p => p.bookId !== bookId);
-            saveData(); // 保存して同期
+            saveData(); 
         }
     }
 
@@ -848,7 +844,7 @@
                         e.preventDefault();
                         if(confirm(`この計画を削除しますか？\n期間: ${plan.startDate} 〜 ${plan.endDate}`)) {
                             appData.plans = appData.plans.filter(p => p.id !== plan.id);
-                            saveData(); // 保存して同期
+                            saveData(); 
                         }
                     });
                     rRow.appendChild(bar);
@@ -869,7 +865,7 @@
 
         appData.progress.push({ id: 'prog_' + Date.now(), bookId, date, comment, timestamp: new Date(date).getTime() });
         appData.progress.sort((a, b) => a.timestamp - b.timestamp);
-        saveData(); // 保存して同期
+        saveData(); 
         document.getElementById('progressComment').value = '';
     }
 
@@ -883,11 +879,14 @@
         container.innerHTML = '';
         if (appData.progress.length === 0) return;
 
+        // スライダーの値を取得
+        const scaleSlider = document.getElementById('timelineScaleSlider');
+        const pxPerDay = scaleSlider ? parseInt(scaleSlider.value, 10) : 35;
+
         const timestamps = appData.progress.map(p => p.timestamp);
         const minTime = Math.min(...timestamps);
         const maxTime = Math.max(...timestamps);
         const daySpan = Math.max(1, Math.ceil((maxTime - minTime) / 86400000));
-        const pxPerDay = 35; 
         const trackWidth = Math.max(800, daySpan * pxPerDay + 300);
 
         if (timelineMode === 'all') {
@@ -944,7 +943,7 @@
                 e.preventDefault();
                 if(confirm(`【${prog.date}】の記録を削除しますか？\n内容: ${prog.comment}`)) {
                     appData.progress = appData.progress.filter(p => p.id !== prog.id);
-                    saveData(); // 保存して同期
+                    saveData(); 
                 }
             });
             track.appendChild(node);
@@ -994,6 +993,7 @@
     window.deleteBook = deleteBook;
     window.addProgress = addProgress;
     window.setTimelineMode = setTimelineMode;
+    window.renderTimeline = renderTimeline; // スライダー操作用に追加
 
     // 初期化実行 (ページロード時に1回だけGET)
     setDefaultDates();
