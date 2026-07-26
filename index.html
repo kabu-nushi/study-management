@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勉強管理ポータル</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --bg: #F3F4F6;
+            --surface: #FFFFFF;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        /* タブ切り替え */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #E5E7EB;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #6B7280;
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: -2px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 1. 時間管理スプレッドシート風 */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #D1D5DB;
+            padding: 5px;
+            text-align: center;
+        }
+        .cell-input {
+            width: 25px;
+            height: 25px;
+            text-align: center;
+            border: none;
+            outline: none;
+            font-weight: bold;
+        }
+        /* JSで色を変えるためのクラス */
+        .bg-red { background-color: #FCA5A5; color: transparent; }
+        .bg-blue { background-color: #93C5FD; color: transparent; }
+        .row-plan { background-color: #F9FAFB; }
+
+        /* 2. 参考書登録フォーム */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #D1D5DB;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background-color: #4338CA; }
+        .book-list { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
+        .book-card {
+            border: 1px solid #E5E7EB;
+            padding: 10px;
+            border-radius: 8px;
+            width: 150px;
+            text-align: center;
+        }
+        .book-card img { max-width: 100px; max-height: 140px; }
+
+        /* 3. タイムライン */
+        .timeline-container {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px 0;
+            gap: 20px;
+            align-items: center;
+            border-top: 2px solid #E5E7EB; /* 時間軸 */
+            margin-top: 30px;
+        }
+        .timeline-item {
+            position: relative;
+            min-width: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+        /* 軸上の点 */
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: -26px; /* 軸に合わせる */
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+        .bubble {
+            background: #fff;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 10px;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        .bubble-img { max-width: 80px; max-height: 100px; display: block; }
+        .bubble-text { display: none; font-size: 0.9em; text-align: left; word-break: break-all; }
+        /* ホバーで画像とテキストを切り替え */
+        .timeline-item:hover .bubble-img { display: none; }
+        .timeline-item:hover .bubble-text { display: block; }
+        .timeline-date { margin-top: 8px; font-size: 0.8em; color: #6B7280; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>勉強管理ポータル</h2>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('time')">時間管理</div>
+        <div class="tab" onclick="switchTab('plan')">参考書・計画</div>
+        <div class="tab" onclick="switchTab('progress')">進行度タイムライン</div>
+    </div>
+
+    <!-- 1. 時間管理スプレッドシート -->
+    <div id="tab-time" class="tab-content active">
+        <h3>学習時間の記録 (0=赤/未実施, 1=青/30分)</h3>
+        <table id="timeTable">
+            <thead>
+                <tr>
+                    <th>日付</th>
+                    <th>区分</th>
+                    <!-- 1日10コマ(5時間分)の例。増やす場合はここを追加 -->
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                    <th>合計時間</th>
+                </tr>
+            </thead>
+            <tbody id="timeTableBody">
+                <!-- JSで生成 -->
+            </tbody>
+        </table>
+        <button onclick="saveTimeData()" style="margin-top: 15px;">保存する</button>
+    </div>
+
+    <!-- 2. 学習計画の一元化 -->
+    <div id="tab-plan" class="tab-content">
+        <h3>参考書の登録</h3>
+        <div class="form-group">
+            <input type="text" id="bookSubject" placeholder="教科 (例: 物理)">
+        </div>
+        <div class="form-group">
+            <input type="text" id="bookTitle" placeholder="参考書名 (例: 物理のエッセンス)">
+        </div>
+        <div class="form-group">
+            <label style="font-size: 0.9em; color: #666;">表紙画像:</label><br>
+            <input type="file" id="bookImage" accept="image/*">
+        </div>
+        <button onclick="addBook()">参考書を登録</button>
+
+        <h3 style="margin-top: 30px;">登録済み参考書</h3>
+        <div class="book-list" id="bookListContainer"></div>
+    </div>
+
+    <!-- 3. 進行度タイムライン -->
+    <div id="tab-progress" class="tab-content">
+        <h3>学習進行度の記録</h3>
+        <div class="form-group">
+            <select id="progressBookSelect">
+                <option value="">参考書を選択...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <input type="date" id="progressDate">
+        </div>
+        <div class="form-group">
+            <input type="text" id="progressComment" placeholder="進行度 (例: 電磁気1周目終了)">
+        </div>
+        <button onclick="addProgress()">記録を追加</button>
+
+        <h3 style="margin-top: 30px;">タイムライン履歴 (画像にカーソルを合わせると詳細表示)</h3>
+        <div class="timeline-container" id="timelineContainer">
+            <!-- JSで生成 -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- データ保存用変数（ローカルストレージと同期） ---
+    let appData = JSON.parse(localStorage.getItem('studyTrackerData')) || {
+        books: [],
+        progress: [],
+        timeGrid: {} // { "day1-plan-1": "1", ... }
+    };
+
+    // --- タブ切り替え ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // --- 1. 時間管理機能 ---
+    function initTimeGrid() {
+        const tbody = document.getElementById('timeTableBody');
+        tbody.innerHTML = '';
+        const days = ['月', '火', '水', '木', '金', '土', '日'];
+        
+        days.forEach((day, dayIndex) => {
+            ['計画', '実績'].forEach(type => {
+                const tr = document.createElement('tr');
+                if(type === '計画') tr.className = 'row-plan';
+                
+                if(type === '計画') {
+                    const tdDay = document.createElement('td');
+                    tdDay.rowSpan = 2;
+                    tdDay.innerText = day;
+                    tr.appendChild(tdDay);
+                }
+                
+                const tdType = document.createElement('td');
+                tdType.innerText = type;
+                tr.appendChild(tdType);
+
+                for(let i = 1; i <= 10; i++) {
+                    const td = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'cell-input';
+                    input.maxLength = 1;
+                    const cellId = `cell-${dayIndex}-${type}-${i}`;
+                    input.id = cellId;
+                    input.value = appData.timeGrid[cellId] || '';
+                    
+                    input.addEventListener('input', (e) => handleCellInput(e, dayIndex, type));
+                    // 初期表示の色付け
+                    updateCellColor(input);
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                }
+
+                const tdTotal = document.createElement('td');
+                tdTotal.id = `total-${dayIndex}-${type}`;
+                tdTotal.innerText = '0h';
+                tr.appendChild(tdTotal);
+                tbody.appendChild(tr);
+            });
+            calcRowTotal(dayIndex, '計画');
+            calcRowTotal(dayIndex, '実績');
+        });
+    }
+
+    function handleCellInput(e, dayIndex, type) {
+        const input = e.target;
+        // 0と1以外の入力を防ぐ
+        if (input.value !== '0' && input.value !== '1' && input.value !== '') {
+            input.value = '';
+        }
+        updateCellColor(input);
+        appData.timeGrid[input.id] = input.value;
+        calcRowTotal(dayIndex, type);
+    }
+
+    function updateCellColor(input) {
+        input.classList.remove('bg-red', 'bg-blue');
+        if (input.value === '0') input.classList.add('bg-red');
+        if (input.value === '1') input.classList.add('bg-blue');
+    }
+
+    function calcRowTotal(dayIndex, type) {
+        let count = 0;
+        for(let i = 1; i <= 10; i++) {
+            const val = document.getElementById(`cell-${dayIndex}-${type}-${i}`).value;
+            if(val === '1') count++;
+        }
+        // 1 = 30分(0.5時間)
+        const hours = count * 0.5;
+        document.getElementById(`total-${dayIndex}-${type}`).innerText = hours + 'h';
+    }
+
+    function saveTimeData() {
+        saveData();
+        alert('時間割を保存しました');
+    }
+
+    // --- 2. 参考書登録機能 ---
+    function addBook() {
+        const subject = document.getElementById('bookSubject').value;
+        const title = document.getElementById('bookTitle').value;
+        const imageFile = document.getElementById('bookImage').files[0];
+
+        if (!subject || !title) return alert('教科と参考書名を入力してください');
+
+        if (imageFile) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                saveBookData(subject, title, base64Image);
+            };
+            reader.readAsDataURL(imageFile); // 画像を文字(Base64)に変換して保存
+        } else {
+            saveBookData(subject, title, ''); // 画像なし
+        }
+    }
+
+    function saveBookData(subject, title, imageStr) {
+        const bookId = Date.now().toString();
+        appData.books.push({ id: bookId, subject, title, image: imageStr });
+        saveData();
+        
+        document.getElementById('bookSubject').value = '';
+        document.getElementById('bookTitle').value = '';
+        document.getElementById('bookImage').value = '';
+        
+        renderBooks();
+        updateBookSelect();
+        alert('参考書を登録しました');
+    }
+
+    function renderBooks() {
+        const container = document.getElementById('bookListContainer');
+        container.innerHTML = '';
+        appData.books.forEach(book => {
+            container.innerHTML += `
+                <div class="book-card">
+                    <div style="font-size: 0.8em; color: #666;">${book.subject}</div>
+                    ${book.image ? `<img src="${book.image}" alt="表紙">` : '<div style="height:100px; background:#e5e7eb; display:flex; align-items:center; justify-content:center;">画像なし</div>'}
+                    <div style="font-weight: bold; margin-top: 5px;">${book.title}</div>
+                </div>
+            `;
+        });
+    }
+
+    // --- 3. タイムライン機能 ---
+    function updateBookSelect() {
+        const select = document.getElementById('progressBookSelect');
+        select.innerHTML = '<option value="">参考書を選択...</option>';
+        appData.books.forEach(book => {
+            select.innerHTML += `<option value="${book.id}">[${book.subject}] ${book.title}</option>`;
+        });
+    }
+
+    function addProgress() {
+        const bookId = document.getElementById('progressBookSelect').value;
+        const date = document.getElementById('progressDate').value;
+        const comment = document.getElementById('progressComment').value;
+
+        if (!bookId || !date || !comment) return alert('全ての項目を入力してください');
+
+        appData.progress.push({ bookId, date, comment, timestamp: new Date(date).getTime() });
+        // 日付順に並び替え
+        appData.progress.sort((a, b) => a.timestamp - b.timestamp);
+        
+        saveData();
+        
+        document.getElementById('progressComment').value = '';
+        renderTimeline();
+    }
+
+    function renderTimeline() {
+        const container = document.getElementById('timelineContainer');
+        container.innerHTML = '';
+        
+        appData.progress.forEach(prog => {
+            const book = appData.books.find(b => b.id === prog.bookId);
+            if(!book) return;
+
+            const imgSrc = book.image || ''; // 画像がない場合は空
+
+            container.innerHTML += `
+                <div class="timeline-item">
+                    <div class="bubble">
+                        ${imgSrc ? `<img src="${imgSrc}" class="bubble-img">` : `<div class="bubble-img">画像なし</div>`}
+                        <div class="bubble-text">${prog.comment}</div>
+                    </div>
+                    <div class="timeline-date">${prog.date}</div>
+                </div>
+            `;
+        });
+    }
+
+    // --- 共通ユーティリティ ---
+    function saveData() {
+        localStorage.setItem('studyTrackerData', JSON.stringify(appData));
+    }
+
+    // 初期化処理
+    window.onload = () => {
+        initTimeGrid();
+        renderBooks();
+        updateBookSelect();
+        renderTimeline();
+    };
+</script>
+</body>
+</html>
