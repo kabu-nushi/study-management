@@ -125,6 +125,7 @@
             max-width: 100%;
             border: 1px solid #D1D5DB;
             border-radius: 6px;
+            scroll-behavior: smooth; /* スムーズスクロール */
         }
         table.time-table {
             border-collapse: separate;
@@ -243,7 +244,7 @@
             flex-direction: column;
             width: 100px;
             min-width: 100px;
-            padding-bottom: 80px; /* 吹き出し見切れ対策 */
+            padding-bottom: 80px; 
         }
         .gantt-right {
             position: relative;
@@ -251,7 +252,7 @@
             background-image: linear-gradient(90deg, #F3F4F6 1px, transparent 1px);
             background-size: 40px 100%; 
             min-height: 100px;
-            padding-bottom: 80px; /* 吹き出し見切れ対策 */
+            padding-bottom: 80px; 
         }
         .gantt-header {
             height: 40px;
@@ -299,14 +300,14 @@
         }
         .gantt-bar:hover { z-index: 10; background: #C026D3; }
         
-        /* 計画バーの吹き出し (下に出す) */
+        /* 計画バーの吹き出し（動的幅調整のため一部プロパティを変更） */
         .plan-tooltip {
             visibility: hidden;
             background-color: #1F2937;
             color: #fff;
             text-align: center;
             border-radius: 6px;
-            padding: 8px 12px;
+            padding: 10px 12px;
             position: absolute;
             z-index: 15;
             top: 130%; 
@@ -314,8 +315,9 @@
             transform: translateX(-50%);
             opacity: 0;
             transition: opacity 0.2s;
-            white-space: pre-wrap;
-            min-width: 150px;
+            /* widthはJSで動的に計算 */
+            white-space: normal;
+            word-break: break-all;
             line-height: 1.4;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             pointer-events: none; 
@@ -328,7 +330,7 @@
             margin-left: -5px;
             border-width: 5px;
             border-style: solid;
-            border-color: transparent transparent #1F2937 transparent; /* 上向きの三角 */
+            border-color: transparent transparent #1F2937 transparent; 
         }
         .gantt-bar:hover .plan-tooltip {
             visibility: visible;
@@ -519,7 +521,6 @@
         <h3 style="margin-top: 30px;">学習スケジュール</h3>
         <p style="font-size:0.8em; color:#666;">※バーにカーソルを合わせると詳細表示。バーを<b>右クリックで個別計画を削除</b>できます。</p>
         
-        <!-- ガントチャート用の縮尺バー -->
         <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
             <label for="ganttScaleSlider" style="font-size:0.85em; font-weight:bold; color: #4B5563;">軸の縮尺:</label>
             <input type="range" id="ganttScaleSlider" min="2" max="60" value="15" oninput="window.renderGantt()" style="cursor: pointer;">
@@ -551,12 +552,10 @@
         <p style="font-size:0.8em; color:#666;">※丸い点を右クリックで削除。</p>
         
         <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <!-- 選択状態がわかるようにID付与・クラス制御 -->
             <button id="btn-timeline-all" onclick="window.setTimelineMode('all')" class="">すべて</button>
             <button id="btn-timeline-book" onclick="window.setTimelineMode('byBook')" class="btn-secondary">参考書ごと</button>
             <div style="margin-left: 20px; display: flex; align-items: center; gap: 10px;">
                 <label for="timelineScaleSlider" style="font-size:0.85em; font-weight:bold; color: #4B5563;">軸の縮尺:</label>
-                <!-- 縮尺レンジを変更 -->
                 <input type="range" id="timelineScaleSlider" min="2" max="60" value="15" oninput="window.renderTimeline()" style="cursor: pointer;">
             </div>
         </div>
@@ -593,7 +592,6 @@
     };
 
     let timelineMode = 'all';
-    let hasScrolledToToday = false;
     let saveDebounceTimer = null; 
 
     function updateStatus(text, isError = false) {
@@ -673,8 +671,21 @@
     function switchTab(tabId) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        event.target.classList.add('active');
+        
+        // クリックしたタブをアクティブ化（event.targetが使える場合と、使えない場合のフォールバック）
+        if (window.event && window.event.target && window.event.target.classList.contains('tab')) {
+            window.event.target.classList.add('active');
+        } else {
+            const activeTab = document.querySelector(`.tab[onclick*="switchTab('${tabId}')"]`);
+            if (activeTab) activeTab.classList.add('active');
+        }
+        
         document.getElementById('tab-' + tabId).classList.add('active');
+
+        // タブを「時間記録」へ移動するたびに「今日に移動」する
+        if (tabId === 'time') {
+            setTimeout(window.scrollToToday, 50); 
+        }
     }
 
     // --- カレンダー描画処理 ---
@@ -885,11 +896,6 @@
             calcTotal(dateStr, '計画');
             calcTotal(dateStr, '実績');
         }
-
-        if (!hasScrolledToToday) {
-            setTimeout(scrollToToday, 100);
-            hasScrolledToToday = true;
-        }
     }
 
     function scrollToToday() {
@@ -987,7 +993,6 @@
         maxTime += 86400000 * 20;
         const totalDays = Math.ceil((maxTime - minTime) / 86400000);
         
-        // スライダーの値を取得
         const scaleSlider = document.getElementById('ganttScaleSlider');
         const pxPerDay = scaleSlider ? parseInt(scaleSlider.value, 10) : 15;
 
@@ -1000,7 +1005,10 @@
         
         const rightPane = document.createElement('div');
         rightPane.className = 'gantt-right';
-        rightPane.style.width = (totalDays * pxPerDay) + 'px';
+        
+        // 画面の右端で吹き出し（ツールチップ）が途切れないように余裕（300pxのバッファ）を持たせる
+        const rightPaneWidth = totalDays * pxPerDay + 300; 
+        rightPane.style.width = rightPaneWidth + 'px';
 
         const rightHeader = document.createElement('div');
         rightHeader.className = 'gantt-header';
@@ -1044,7 +1052,15 @@
 
                     const tooltip = document.createElement('div');
                     tooltip.className = 'plan-tooltip';
-                    tooltip.innerHTML = `<strong>【目的】</strong><br>${plan.objective || '未設定'}<br><br><strong>【期間】</strong><br>${plan.startDate} 〜 ${plan.endDate}`;
+                    
+                    // --- 吹き出しの幅を文字量から体系的に算出 ---
+                    const fontSize = 12; // 基本のフォントサイズ換算(px)
+                    const objectiveText = plan.objective || '未設定';
+                    // 文字数 × フォントサイズ + 余白 で計算（下限150px、上限300px）
+                    const estimatedWidth = Math.min(Math.max(150, objectiveText.length * fontSize + 30), 300);
+                    tooltip.style.width = estimatedWidth + 'px';
+                    
+                    tooltip.innerHTML = `<strong>【目的】</strong><br>${objectiveText}<br><br><strong>【期間】</strong><br>${plan.startDate} 〜 ${plan.endDate}`;
                     bar.appendChild(tooltip);
 
                     bar.addEventListener('contextmenu', (e) => {
@@ -1081,7 +1097,6 @@
     function setTimelineMode(mode) {
         timelineMode = mode;
         
-        // ボタンのアクティブ状態のクラスを切り替え
         const btnAll = document.getElementById('btn-timeline-all');
         const btnBook = document.getElementById('btn-timeline-book');
         if (mode === 'all') {
@@ -1149,7 +1164,6 @@
             
             const imgSrc = book && book.image ? book.image : '';
             
-            // 参考書ごと(byBook)の場合は画像を隠し、テキストを常時表示する
             let bubbleContent = '';
             if (isByBook) {
                 bubbleContent = `<div style="font-size: 0.8em; color: #1F2937; word-break: break-all; text-align: center;">${prog.comment}</div>`;
