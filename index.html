@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>勉強管理ポータル</title>
+    <title>勉強管理ポータル (クラウド同期版)</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --primary: #4F46E5;
@@ -24,6 +28,13 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        /* 同期ステータス */
+        .sync-status {
+            font-size: 0.8em;
+            color: #10B981;
+            text-align: right;
+            margin-bottom: 10px;
         }
         /* タブ切り替え */
         .tabs {
@@ -68,7 +79,6 @@
             outline: none;
             font-weight: bold;
         }
-        /* JSで色を変えるためのクラス */
         .bg-red { background-color: #FCA5A5; color: transparent; }
         .bg-blue { background-color: #93C5FD; color: transparent; }
         .row-plan { background-color: #F9FAFB; }
@@ -111,7 +121,7 @@
             padding: 20px 0;
             gap: 20px;
             align-items: center;
-            border-top: 2px solid #E5E7EB; /* 時間軸 */
+            border-top: 2px solid #E5E7EB;
             margin-top: 30px;
         }
         .timeline-item {
@@ -122,11 +132,10 @@
             align-items: center;
             cursor: pointer;
         }
-        /* 軸上の点 */
         .timeline-item::before {
             content: '';
             position: absolute;
-            top: -26px; /* 軸に合わせる */
+            top: -26px;
             width: 12px;
             height: 12px;
             background: var(--primary);
@@ -147,7 +156,6 @@
         }
         .bubble-img { max-width: 80px; max-height: 100px; display: block; }
         .bubble-text { display: none; font-size: 0.9em; text-align: left; word-break: break-all; }
-        /* ホバーで画像とテキストを切り替え */
         .timeline-item:hover .bubble-img { display: none; }
         .timeline-item:hover .bubble-text { display: block; }
         .timeline-date { margin-top: 8px; font-size: 0.8em; color: #6B7280; }
@@ -156,6 +164,7 @@
 <body>
 
 <div class="container">
+    <div class="sync-status" id="syncStatus">☁️ クラウド接続中...</div>
     <h2>勉強管理ポータル</h2>
     
     <div class="tabs">
@@ -164,7 +173,6 @@
         <div class="tab" onclick="switchTab('progress')">進行度タイムライン</div>
     </div>
 
-    <!-- 1. 時間管理スプレッドシート -->
     <div id="tab-time" class="tab-content active">
         <h3>学習時間の記録 (0=赤/未実施, 1=青/30分)</h3>
         <table id="timeTable">
@@ -172,19 +180,15 @@
                 <tr>
                     <th>日付</th>
                     <th>区分</th>
-                    <!-- 1日10コマ(5時間分)の例。増やす場合はここを追加 -->
                     <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
                     <th>合計時間</th>
                 </tr>
             </thead>
-            <tbody id="timeTableBody">
-                <!-- JSで生成 -->
-            </tbody>
+            <tbody id="timeTableBody"></tbody>
         </table>
         <button onclick="saveTimeData()" style="margin-top: 15px;">保存する</button>
     </div>
 
-    <!-- 2. 学習計画の一元化 -->
     <div id="tab-plan" class="tab-content">
         <h3>参考書の登録</h3>
         <div class="form-group">
@@ -203,7 +207,6 @@
         <div class="book-list" id="bookListContainer"></div>
     </div>
 
-    <!-- 3. 進行度タイムライン -->
     <div id="tab-progress" class="tab-content">
         <h3>学習進行度の記録</h3>
         <div class="form-group">
@@ -219,22 +222,66 @@
         </div>
         <button onclick="addProgress()">記録を追加</button>
 
-        <h3 style="margin-top: 30px;">タイムライン履歴 (画像にカーソルを合わせると詳細表示)</h3>
-        <div class="timeline-container" id="timelineContainer">
-            <!-- JSで生成 -->
-        </div>
+        <h3 style="margin-top: 30px;">タイムライン履歴</h3>
+        <div class="timeline-container" id="timelineContainer"></div>
     </div>
 </div>
 
 <script>
-    // --- データ保存用変数（ローカルストレージと同期） ---
-    let appData = JSON.parse(localStorage.getItem('studyTrackerData')) || {
+    // -------------------------------------------------------------
+    // 【重要】ここにFirebaseのコンソールでコピーした設定を貼り付けてください
+    // -------------------------------------------------------------
+    const firebaseConfig = {
+  apiKey: "AIzaSyBIAE1d3WIzUDHkzmzpxIbh0stQrDNWiNQ",
+  authDomain: "study-management-96fac.firebaseapp.com",
+  projectId: "study-management-96fac",
+  storageBucket: "study-management-96fac.firebasestorage.app",
+  messagingSenderId: "154325503119",
+  appId: "1:154325503119:web:ba327855038538576cb4fa"
+};
+
+
+    // Firebaseの初期化
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let appData = {
         books: [],
         progress: [],
-        timeGrid: {} // { "day1-plan-1": "1", ... }
+        timeGrid: {}
     };
 
-    // --- タブ切り替え ---
+    // クラウドから最新データをリアルタイム取得
+    db.ref('studyData').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            appData = data;
+            if(!appData.books) appData.books = [];
+            if(!appData.progress) appData.progress = [];
+            if(!appData.timeGrid) appData.timeGrid = {};
+            
+            // 画面を再描画
+            initTimeGrid();
+            renderBooks();
+            updateBookSelect();
+            renderTimeline();
+        }
+        document.getElementById('syncStatus').innerText = '☁️ クラウド同期完了';
+    });
+
+    // クラウドへの保存処理
+    function saveData() {
+        document.getElementById('syncStatus').innerText = '☁️ 保存中...';
+        db.ref('studyData').set(appData, (error) => {
+            if (error) {
+                alert('保存に失敗しました: ' + error);
+            } else {
+                document.getElementById('syncStatus').innerText = '☁️ クラウド同期完了';
+            }
+        });
+    }
+
+    // --- UI・タブ制御 ---
     function switchTab(tabId) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -275,7 +322,6 @@
                     input.value = appData.timeGrid[cellId] || '';
                     
                     input.addEventListener('input', (e) => handleCellInput(e, dayIndex, type));
-                    // 初期表示の色付け
                     updateCellColor(input);
                     td.appendChild(input);
                     tr.appendChild(td);
@@ -294,7 +340,6 @@
 
     function handleCellInput(e, dayIndex, type) {
         const input = e.target;
-        // 0と1以外の入力を防ぐ
         if (input.value !== '0' && input.value !== '1' && input.value !== '') {
             input.value = '';
         }
@@ -312,17 +357,17 @@
     function calcRowTotal(dayIndex, type) {
         let count = 0;
         for(let i = 1; i <= 10; i++) {
-            const val = document.getElementById(`cell-${dayIndex}-${type}-${i}`).value;
+            const val = document.getElementById(`cell-${dayIndex}-${type}-${i}`)?.value;
             if(val === '1') count++;
         }
-        // 1 = 30分(0.5時間)
         const hours = count * 0.5;
-        document.getElementById(`total-${dayIndex}-${type}`).innerText = hours + 'h';
+        const totalElem = document.getElementById(`total-${dayIndex}-${type}`);
+        if(totalElem) totalElem.innerText = hours + 'h';
     }
 
     function saveTimeData() {
         saveData();
-        alert('時間割を保存しました');
+        alert('時間割をクラウドに保存しました！');
     }
 
     // --- 2. 参考書登録機能 ---
@@ -336,12 +381,11 @@
         if (imageFile) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const base64Image = e.target.result;
-                saveBookData(subject, title, base64Image);
+                saveBookData(subject, title, e.target.result);
             };
-            reader.readAsDataURL(imageFile); // 画像を文字(Base64)に変換して保存
+            reader.readAsDataURL(imageFile);
         } else {
-            saveBookData(subject, title, ''); // 画像なし
+            saveBookData(subject, title, '');
         }
     }
 
@@ -353,10 +397,6 @@
         document.getElementById('bookSubject').value = '';
         document.getElementById('bookTitle').value = '';
         document.getElementById('bookImage').value = '';
-        
-        renderBooks();
-        updateBookSelect();
-        alert('参考書を登録しました');
     }
 
     function renderBooks() {
@@ -390,13 +430,10 @@
         if (!bookId || !date || !comment) return alert('全ての項目を入力してください');
 
         appData.progress.push({ bookId, date, comment, timestamp: new Date(date).getTime() });
-        // 日付順に並び替え
         appData.progress.sort((a, b) => a.timestamp - b.timestamp);
         
         saveData();
-        
         document.getElementById('progressComment').value = '';
-        renderTimeline();
     }
 
     function renderTimeline() {
@@ -407,7 +444,7 @@
             const book = appData.books.find(b => b.id === prog.bookId);
             if(!book) return;
 
-            const imgSrc = book.image || ''; // 画像がない場合は空
+            const imgSrc = book.image || '';
 
             container.innerHTML += `
                 <div class="timeline-item">
@@ -421,17 +458,8 @@
         });
     }
 
-    // --- 共通ユーティリティ ---
-    function saveData() {
-        localStorage.setItem('studyTrackerData', JSON.stringify(appData));
-    }
-
-    // 初期化処理
     window.onload = () => {
         initTimeGrid();
-        renderBooks();
-        updateBookSelect();
-        renderTimeline();
     };
 </script>
 </body>
