@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>勉強管理ポータル</title>
     
-    <!-- Firebase SDK (v9 compat) -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
     <style>
         :root {
             --primary: #4F46E5;
@@ -24,7 +20,7 @@
             color: #333;
         }
         .container {
-            max-width: 1400px; /* UI幅を拡張 */
+            max-width: 1400px; 
             margin: 0 auto;
             background: var(--surface);
             padding: 20px;
@@ -38,6 +34,7 @@
             margin-bottom: 10px;
             font-weight: bold;
         }
+        .sync-error { color: var(--danger); }
         
         /* タブ */
         .tabs {
@@ -61,7 +58,7 @@
 
         /* 1. 時間管理テーブル */
         .table-wrapper {
-            max-height: 65vh; /* 縦スクロール用 */
+            max-height: 65vh; 
             overflow-y: auto;
             overflow-x: auto;
             max-width: 100%;
@@ -83,7 +80,7 @@
             border-right: 1px solid #E5E7EB;
         }
         thead tr:nth-child(1) th { top: 0; }
-        thead tr:nth-child(2) th { top: 29px; } /* 2段目ヘッダーの位置調整 */
+        thead tr:nth-child(2) th { top: 29px; } 
         th, td {
             border-bottom: 1px solid #E5E7EB;
             border-right: 1px solid #E5E7EB;
@@ -105,7 +102,7 @@
         .bg-blue { background-color: #93C5FD; color: transparent; }
         .row-plan { background-color: #F9FAFB; }
         .note-input {
-            width: 280px; /* 備考欄を拡大 */
+            width: 280px; 
             padding: 6px;
             border: 1px solid #D1D5DB;
             border-radius: 3px;
@@ -175,7 +172,7 @@
             position: sticky;
             left: 0;
             background: #FAFAFA;
-            z-index: 20; /* ツールチップより上に */
+            z-index: 20; 
             border-right: 2px solid #E5E7EB;
             display: flex;
             flex-direction: column;
@@ -186,7 +183,7 @@
             position: relative;
             background: #fff;
             background-image: linear-gradient(90deg, #F3F4F6 1px, transparent 1px);
-            background-size: 40px 100%; /* メモリの間隔 = 1日 */
+            background-size: 40px 100%; 
             min-height: 100px;
         }
         .gantt-header {
@@ -228,7 +225,7 @@
             padding: 0 10px;
             border-radius: 12px;
             white-space: nowrap;
-            overflow: visible; /* 吹き出し表示のため */
+            overflow: visible; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             cursor: pointer;
             z-index: 5;
@@ -254,7 +251,7 @@
             min-width: 150px;
             line-height: 1.4;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            pointer-events: none; /* ホバーちらつき防止 */
+            pointer-events: none; 
         }
         .plan-tooltip::after {
             content: "";
@@ -356,20 +353,20 @@
 <body>
 
 <div class="container">
-    <div class="sync-status" id="syncStatus">☁️ クラウド接続中...</div>
+    <div class="sync-status" id="syncStatus">☁️ 待機中...</div>
     <h2>勉強管理ポータル</h2>
     
     <div class="tabs">
-        <div class="tab active" onclick="switchTab('time')">① 勉強時間記録</div>
-        <div class="tab" onclick="switchTab('plan')">② 学習計画</div>
-        <div class="tab" onclick="switchTab('progress')">③ 学習記録</div>
+        <div class="tab active" onclick="window.switchTab('time')">① 勉強時間記録</div>
+        <div class="tab" onclick="window.switchTab('plan')">② 学習計画</div>
+        <div class="tab" onclick="window.switchTab('progress')">③ 学習記録</div>
     </div>
 
     <!-- 1. 勉強時間記録 -->
     <div id="tab-time" class="tab-content active">
         <h3 style="display:flex; justify-content:space-between; align-items:center;">
             <span>時間記録 (0=赤, 1=青/30分)</span>
-            <button onclick="scrollToToday()" class="btn-secondary" style="font-size:0.8em;">「今日」に移動</button>
+            <button onclick="window.scrollToToday()" class="btn-secondary" style="font-size:0.8em;">「今日」に移動</button>
         </h3>
         
         <div class="table-wrapper" id="timeTableWrapper">
@@ -379,7 +376,6 @@
                         <th rowspan="2">日付</th>
                         <th rowspan="2">曜日</th>
                         <th rowspan="2">区分</th>
-                        <!-- 6時~25時 (20時間 = 40コマ) -->
                         <th colspan="2">6時</th><th colspan="2">7時</th><th colspan="2">8時</th><th colspan="2">9時</th>
                         <th colspan="2">10時</th><th colspan="2">11時</th><th colspan="2">12時</th><th colspan="2">13時</th>
                         <th colspan="2">14時</th><th colspan="2">15時</th><th colspan="2">16時</th><th colspan="2">17時</th>
@@ -389,7 +385,6 @@
                         <th rowspan="2">備考</th>
                     </tr>
                     <tr>
-                        <!-- 30分単位ラベル x 20 -->
                         <th>00</th><th>30</th><th>00</th><th>30</th><th>00</th><th>30</th><th>00</th><th>30</th>
                         <th>00</th><th>30</th><th>00</th><th>30</th><th>00</th><th>30</th><th>00</th><th>30</th>
                         <th>00</th><th>30</th><th>00</th><th>30</th><th>00</th><th>30</th><th>00</th><th>30</th>
@@ -401,14 +396,13 @@
             </table>
         </div>
         <div style="margin-top: 15px; display: flex; gap: 10px;">
-            <button onclick="saveTimeData()">変更を保存する</button>
+            <button onclick="window.saveData(true)">変更を保存する</button>
         </div>
     </div>
 
     <!-- 2. 学習計画 -->
     <div id="tab-plan" class="tab-content">
         <div class="plan-layout">
-            <!-- 左: 参考書登録 -->
             <div class="layout-section">
                 <h3>📖 参考書登録</h3>
                 <div class="form-group">
@@ -423,10 +417,9 @@
                     <label>表紙画像</label>
                     <input type="file" id="bookImage" accept="image/*">
                 </div>
-                <button onclick="addBook()">参考書を登録</button>
+                <button onclick="window.addBook()">参考書を登録</button>
             </div>
 
-            <!-- 右: 計画登録 -->
             <div class="layout-section">
                 <h3>📅 計画の追加</h3>
                 <p style="font-size:0.8em; color:#666; margin-top:0;">1つの参考書に複数の計画（1周目、復習など）を追加できます。</p>
@@ -445,8 +438,8 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button onclick="saveNewPlan()">この計画を追加</button>
-                    <button onclick="deleteBook()" class="btn-danger">選択した参考書自体を削除</button>
+                    <button onclick="window.saveNewPlan()">この計画を追加</button>
+                    <button onclick="window.deleteBook()" class="btn-danger">選択した参考書自体を削除</button>
                 </div>
             </div>
         </div>
@@ -472,55 +465,108 @@
                 <label>進行度・コメント</label>
                 <input type="text" id="progressComment" placeholder="例: 電磁気1周目終了">
             </div>
-            <button onclick="addProgress()">記録を追加</button>
+            <button onclick="window.addProgress()">記録を追加</button>
         </div>
 
         <h3 style="margin-top: 30px;">進行度タイムライン</h3>
         <p style="font-size:0.8em; color:#666;">※丸い点を右クリックで削除。</p>
         <div style="margin-bottom: 15px; display: flex; gap: 10px;">
-            <button onclick="setTimelineMode('all')">すべての参考書を1本化</button>
-            <button onclick="setTimelineMode('byBook')" class="btn-secondary">参考書ごとに分ける</button>
+            <button onclick="window.setTimelineMode('all')">すべての参考書を1本化</button>
+            <button onclick="window.setTimelineMode('byBook')" class="btn-secondary">参考書ごとに分ける</button>
         </div>
 
-        <div class="timeline-scroll-container" id="timelineScrollContainer">
-            <!-- JSで動的生成 -->
-        </div>
+        <div class="timeline-scroll-container" id="timelineScrollContainer"></div>
     </div>
 </div>
 
-<script>
-    // Firebase 設定情報
+<!-- Cloud Firestore (v10) の読み込み -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    // Realtime Database ではなく Firestore をインポート
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
     const firebaseConfig = {
         apiKey: "AIzaSyBIAE1d3WIzUDHkzmzpxIbh0stQrDNWiNQ",
         authDomain: "study-management-96fac.firebaseapp.com",
-        databaseURL: "https://study-management-96fac-default-rtdb.firebaseio.com",
         projectId: "study-management-96fac",
         storageBucket: "study-management-96fac.firebasestorage.app",
         messagingSenderId: "154325503119",
         appId: "1:154325503119:web:ba327855038538576cb4fa"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // Firebase 初期化
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    // studyDataコレクションの main ドキュメントにすべて保存する
+    const docRef = doc(db, "studyData", "main"); 
 
-    // 複数の計画を持てるよう `plans` 配列を追加
     let appData = {
-        books: [],
-        plans: [],
-        progress: [],
-        timeGrid: {},
-        notes: {}
+        books: [],     
+        plans: [],     
+        progress: [],  
+        timeGrid: {},  
+        notes: {}      
     };
 
     let timelineMode = 'all';
-    let hasScrolledToToday = false; // 初回ロード時のスクロール判定
+    let hasScrolledToToday = false;
 
-    // 祝日判定関数
+    function updateStatus(text, isError = false) {
+        const el = document.getElementById('syncStatus');
+        el.innerText = text;
+        if (isError) el.classList.add('sync-error');
+        else el.classList.remove('sync-error');
+    }
+
+    // -----------------------------------------------------------------
+    // クラウド処理: GET (ページ読み込み時に1回だけ)
+    // -----------------------------------------------------------------
+    async function loadData() {
+        updateStatus("☁️ クラウドから取得中...");
+        try {
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                appData = {
+                    books: data.books || [],
+                    plans: data.plans || [],
+                    progress: data.progress || [],
+                    timeGrid: data.timeGrid || {},
+                    notes: data.notes || {}
+                };
+            }
+            updateStatus("☁️ 同期済み");
+            renderAll();
+        } catch (error) {
+            console.error("Firestore GET Error:", error);
+            updateStatus("⚠️ 読込エラー: " + (error.message.includes("permission") ? "DBアクセス権限がありません" : error.message), true);
+            // エラー時も最低限ローカルで描画
+            renderAll(); 
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // クラウド処理: PUT (更新アクションのたびに実行)
+    // -----------------------------------------------------------------
+    async function saveData(showAlert = false) {
+        updateStatus("☁️ 保存中...");
+        try {
+            await setDoc(docRef, appData);
+            updateStatus("☁️ 同期済み");
+            if (showAlert) alert('保存が完了しました');
+            renderAll();
+        } catch (error) {
+            console.error("Firestore PUT Error:", error);
+            updateStatus("⚠️ 保存エラー: " + (error.message.includes("permission") ? "DBアクセス権限がありません" : error.message), true);
+            alert("保存に失敗しました。詳細: " + error.message);
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // UI・描画処理群
+    // -----------------------------------------------------------------
     function isJapaneseHoliday(date) {
-        const y = date.getFullYear();
-        const m = date.getMonth() + 1;
-        const d = date.getDate();
-        const day = date.getDay();
+        const y = date.getFullYear(), m = date.getMonth() + 1, d = date.getDate(), day = date.getDay();
         if (m === 1 && d === 1) return true;
         if (m === 2 && d === 11) return true;
         if (m === 2 && d === 23) return true;
@@ -547,43 +593,6 @@
         return false;
     }
 
-    // データ同期（アクセス時に一連のデータを取得）
-    db.ref('studyData').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            appData = data;
-            if(!appData.books) appData.books = [];
-            if(!appData.plans) appData.plans = []; // 旧データ互換用
-            if(!appData.progress) appData.progress = [];
-            if(!appData.timeGrid) appData.timeGrid = {};
-            if(!appData.notes) appData.notes = {};
-            
-            // 旧バージョンのbookデータ(計画内包)がある場合の互換処理
-            appData.books.forEach(b => {
-                if (b.startDate && b.endDate) {
-                    appData.plans.push({
-                        id: 'plan_migrated_' + b.id,
-                        bookId: b.id,
-                        objective: b.objective || '',
-                        startDate: b.startDate,
-                        endDate: b.endDate
-                    });
-                    delete b.startDate; delete b.endDate; delete b.objective; delete b.procedure;
-                }
-            });
-
-            renderAll();
-        }
-        document.getElementById('syncStatus').innerText = '☁️ クラウド同期完了';
-    });
-
-    function saveData() {
-        document.getElementById('syncStatus').innerText = '☁️ 保存中...';
-        db.ref('studyData').set(appData, (err) => {
-            if(!err) document.getElementById('syncStatus').innerText = '☁️ クラウド同期完了';
-        });
-    }
-
     function switchTab(tabId) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -591,16 +600,13 @@
         document.getElementById('tab-' + tabId).classList.add('active');
     }
 
-    // --- 1. 時間管理機能 ---
     function initTimeGrid() {
         const tbody = document.getElementById('timeTableBody');
         tbody.innerHTML = '';
-        
         const today = new Date();
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
         const todayStrLocal = today.toISOString().split('T')[0];
 
-        // 過去30日から未来30日（計61日分）を生成
         for (let dayOffset = -30; dayOffset <= 30; dayOffset++) {
             const currentDate = new Date(today);
             currentDate.setDate(today.getDate() + dayOffset);
@@ -620,7 +626,7 @@
                 const tr = document.createElement('tr');
                 if (type === '計画') tr.className = 'row-plan';
                 if (isToday) tr.classList.add('row-today');
-                if (isToday && type === '計画') tr.id = 'row-today-target'; // スクロール用アンカー
+                if (isToday && type === '計画') tr.id = 'row-today-target';
 
                 if (type === '計画') {
                     const tdDate = document.createElement('td');
@@ -639,7 +645,6 @@
                 tdType.innerText = type;
                 tr.appendChild(tdType);
 
-                // 40コマ (6:00 ~ 25:30)
                 for (let i = 1; i <= 40; i++) {
                     const td = document.createElement('td');
                     const input = document.createElement('input');
@@ -667,14 +672,13 @@
                 tdTotal.id = `total_${dateStr}_${type}`;
                 tr.appendChild(tdTotal);
 
-                // 備考は日付ごと（rowSpan=2）
                 if (type === '計画') {
                     const tdNote = document.createElement('td');
                     tdNote.rowSpan = 2;
                     const noteInput = document.createElement('input');
                     noteInput.type = 'text';
                     noteInput.className = 'note-input';
-                    noteInput.placeholder = "メモ・振り返り等";
+                    noteInput.placeholder = "メモ等";
                     noteInput.value = appData.notes[dateStr] || '';
                     noteInput.addEventListener('change', (e) => {
                         appData.notes[dateStr] = e.target.value;
@@ -682,14 +686,12 @@
                     tdNote.appendChild(noteInput);
                     tr.appendChild(tdNote);
                 }
-
                 tbody.appendChild(tr);
             });
             calcTotal(dateStr, '計画');
             calcTotal(dateStr, '実績');
         }
 
-        // 初回のみ「今日」にスクロール
         if (!hasScrolledToToday) {
             setTimeout(scrollToToday, 100);
             hasScrolledToToday = true;
@@ -700,7 +702,7 @@
         const target = document.getElementById('row-today-target');
         const wrapper = document.getElementById('timeTableWrapper');
         if (target && wrapper) {
-            wrapper.scrollTop = target.offsetTop - wrapper.offsetTop - 50; // ヘッダー分少しずらす
+            wrapper.scrollTop = target.offsetTop - wrapper.offsetTop - 50; 
         }
     }
 
@@ -719,12 +721,6 @@
         if (totalElem) totalElem.innerText = (count * 0.5) + 'h';
     }
 
-    function saveTimeData() {
-        saveData();
-        alert('時間記録を保存しました');
-    }
-
-    // --- 2. 勉強計画機能 ---
     function addBook() {
         const subject = document.getElementById('bookSubject').value.trim();
         const title = document.getElementById('bookTitle').value.trim();
@@ -732,39 +728,36 @@
         if (!subject || !title) return alert('教科と参考書名を入力してください');
         if (imageFile) {
             const reader = new FileReader();
-            reader.onload = (e) => saveBookObj(subject, title, e.target.result);
+            reader.onload = (e) => {
+                appData.books.push({ id: 'book_' + Date.now(), subject, title, image: e.target.result });
+                saveData(); // 保存して同期
+                clearBookForm();
+            };
             reader.readAsDataURL(imageFile);
         } else {
-            saveBookObj(subject, title, '');
+            appData.books.push({ id: 'book_' + Date.now(), subject, title, image: '' });
+            saveData(); // 保存して同期
+            clearBookForm();
         }
     }
 
-    function saveBookObj(subject, title, imageStr) {
-        const bookId = 'book_' + Date.now();
-        appData.books.push({ id: bookId, subject, title, image: imageStr });
-        saveData();
+    function clearBookForm() {
         document.getElementById('bookSubject').value = '';
         document.getElementById('bookTitle').value = '';
         document.getElementById('bookImage').value = '';
-        alert('参考書を登録しました');
     }
 
     function saveNewPlan() {
         const bookId = document.getElementById('planBookSelect').value;
         if (!bookId) return alert('参考書を選択してください');
-        
         const objective = document.getElementById('planObjective').value;
         const startDate = document.getElementById('planStartDate').value;
         const endDate = document.getElementById('planEndDate').value;
-        
         if (!startDate || !endDate) return alert('期間を入力してください');
 
-        const planId = 'plan_' + Date.now();
-        appData.plans.push({ id: planId, bookId, objective, startDate, endDate });
-        saveData();
-        
+        appData.plans.push({ id: 'plan_' + Date.now(), bookId, objective, startDate, endDate });
+        saveData(); // 保存して同期
         document.getElementById('planObjective').value = '';
-        alert('計画を追加しました');
     }
 
     function deleteBook() {
@@ -774,17 +767,15 @@
             appData.books = appData.books.filter(b => b.id !== bookId);
             appData.plans = appData.plans.filter(p => p.bookId !== bookId);
             appData.progress = appData.progress.filter(p => p.bookId !== bookId);
-            saveData();
+            saveData(); // 保存して同期
         }
     }
 
-    // ガントチャート描画
     function renderGantt() {
         const container = document.getElementById('ganttContainer');
         container.innerHTML = '';
         if (appData.books.length === 0) return;
 
-        // 全計画から最小日・最大日を計算
         let minTime = Infinity, maxTime = -Infinity;
         appData.plans.forEach(p => {
             if(p.startDate) minTime = Math.min(minTime, new Date(p.startDate).getTime());
@@ -792,7 +783,6 @@
         });
         if(minTime === Infinity) { minTime = Date.now(); maxTime = Date.now() + 86400000 * 30; }
         
-        // 余裕を持たせる（前10日、後20日）
         minTime -= 86400000 * 10; 
         maxTime += 86400000 * 20;
         const totalDays = Math.ceil((maxTime - minTime) / 86400000);
@@ -801,17 +791,14 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'gantt-wrapper';
 
-        // 左側（表紙）
         const leftPane = document.createElement('div');
         leftPane.className = 'gantt-left';
         leftPane.innerHTML = `<div class="gantt-header" style="justify-content:center;font-weight:bold;">参考書</div>`;
         
-        // 右側（タイムライン）
         const rightPane = document.createElement('div');
         rightPane.className = 'gantt-right';
         rightPane.style.width = (totalDays * pxPerDay) + 'px';
 
-        // 月のみ表示するヘッダー
         const rightHeader = document.createElement('div');
         rightHeader.className = 'gantt-header';
         
@@ -820,7 +807,6 @@
             const d = new Date(minTime + i * 86400000);
             if (d.getMonth() !== currentMonth) {
                 currentMonth = d.getMonth();
-                // 1日の場所に月のラベルを置く
                 const label = document.createElement('div');
                 label.className = 'gantt-date-label';
                 label.style.left = (i * pxPerDay) + 'px';
@@ -830,11 +816,8 @@
         }
         rightPane.appendChild(rightHeader);
 
-        // 各参考書ごとの行を作成
         appData.books.forEach(book => {
-            // この参考書に紐づく計画を取得
             const bookPlans = appData.plans.filter(p => p.bookId === book.id);
-            
             const lRow = document.createElement('div');
             lRow.className = 'gantt-row';
             lRow.innerHTML = `<div class="gantt-cover">${book.image ? `<img src="${book.image}" title="${book.title}">` : '<div style="font-size:0.7em;">画像なし</div>'}</div>`;
@@ -856,43 +839,37 @@
                     bar.style.width = widthPx + 'px';
                     bar.innerText = book.title;
 
-                    // 吹き出し（目的・期間）
                     const tooltip = document.createElement('div');
                     tooltip.className = 'plan-tooltip';
                     tooltip.innerHTML = `<strong>【目的】</strong><br>${plan.objective || '未設定'}<br><br><strong>【期間】</strong><br>${plan.startDate} 〜 ${plan.endDate}`;
                     bar.appendChild(tooltip);
 
-                    // 右クリックで計画のみ削除
                     bar.addEventListener('contextmenu', (e) => {
                         e.preventDefault();
-                        if(confirm(`この計画を削除しますか？\n期間: ${plan.startDate} 〜 ${plan.endDate}\n目的: ${plan.objective || '未設定'}`)) {
+                        if(confirm(`この計画を削除しますか？\n期間: ${plan.startDate} 〜 ${plan.endDate}`)) {
                             appData.plans = appData.plans.filter(p => p.id !== plan.id);
-                            saveData();
+                            saveData(); // 保存して同期
                         }
                     });
-
                     rRow.appendChild(bar);
                 }
             });
             rightPane.appendChild(rRow);
         });
-
         wrapper.appendChild(leftPane);
         wrapper.appendChild(rightPane);
         container.appendChild(wrapper);
     }
 
-    // --- 3. 学習記録機能 ---
     function addProgress() {
         const bookId = document.getElementById('progressBookSelect').value;
         const date = document.getElementById('progressDate').value;
         const comment = document.getElementById('progressComment').value;
         if (!bookId || !date || !comment) return alert('全項目を入力してください');
 
-        const id = 'prog_' + Date.now();
-        appData.progress.push({ id, bookId, date, comment, timestamp: new Date(date).getTime() });
+        appData.progress.push({ id: 'prog_' + Date.now(), bookId, date, comment, timestamp: new Date(date).getTime() });
         appData.progress.sort((a, b) => a.timestamp - b.timestamp);
-        saveData();
+        saveData(); // 保存して同期
         document.getElementById('progressComment').value = '';
     }
 
@@ -910,7 +887,7 @@
         const minTime = Math.min(...timestamps);
         const maxTime = Math.max(...timestamps);
         const daySpan = Math.max(1, Math.ceil((maxTime - minTime) / 86400000));
-        const pxPerDay = 35; // 縮尺
+        const pxPerDay = 35; 
         const trackWidth = Math.max(800, daySpan * pxPerDay + 300);
 
         if (timelineMode === 'all') {
@@ -918,9 +895,7 @@
         } else {
             appData.books.forEach(b => {
                 const bookProgs = appData.progress.filter(p => p.bookId === b.id);
-                if (bookProgs.length > 0) {
-                    container.appendChild(createTimelineTrack(`[${b.subject}] ${b.title}`, trackWidth, bookProgs, minTime, pxPerDay));
-                }
+                if (bookProgs.length > 0) container.appendChild(createTimelineTrack(`[${b.subject}] ${b.title}`, trackWidth, bookProgs, minTime, pxPerDay));
             });
         }
     }
@@ -933,24 +908,21 @@
         track.className = 'timeline-track';
         track.style.width = width + 'px';
 
-        const placedNodes = []; // 重なり判定
+        const placedNodes = []; 
 
         progressItems.forEach(prog => {
             const book = appData.books.find(b => b.id === prog.bookId);
             const daysFromStart = (prog.timestamp - minTime) / 86400000;
             const leftPx = daysFromStart * pxPerDay + 100;
 
-            // 重なり判定 (近すぎる場合は上に積む)
             let stackLevel = 0;
-            while(placedNodes.some(p => p.level === stackLevel && Math.abs(p.left - leftPx) < 100)) {
-                stackLevel++;
-            }
+            while(placedNodes.some(p => p.level === stackLevel && Math.abs(p.left - leftPx) < 100)) stackLevel++;
             placedNodes.push({ left: leftPx, level: stackLevel });
 
             const node = document.createElement('div');
             node.className = 'timeline-node';
             node.style.left = leftPx + 'px';
-            node.style.bottom = '-7px'; // 軸上
+            node.style.bottom = '-7px'; 
 
             const imgSrc = book && book.image ? book.image : '';
             const bubbleBottomOffset = 20 + (stackLevel * 125); 
@@ -968,18 +940,15 @@
                 <div class="node-date" style="top:20px;">${prog.date}</div>
             `;
             
-            // 右クリックで削除
             node.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 if(confirm(`【${prog.date}】の記録を削除しますか？\n内容: ${prog.comment}`)) {
                     appData.progress = appData.progress.filter(p => p.id !== prog.id);
-                    saveData();
+                    saveData(); // 保存して同期
                 }
             });
-
             track.appendChild(node);
         });
-
         trackDiv.appendChild(track);
         return trackDiv;
     }
@@ -1009,7 +978,6 @@
         document.getElementById('progressDate').value = todayStr;
     }
 
-    // 全体の描画更新
     function renderAll() {
         initTimeGrid();
         updateSelects();
@@ -1017,9 +985,19 @@
         renderTimeline();
     }
 
-    window.onload = () => {
-        setDefaultDates();
-    };
+    // --- HTMLからの呼び出し用にWindowオブジェクトにバインド ---
+    window.switchTab = switchTab;
+    window.scrollToToday = scrollToToday;
+    window.saveData = saveData;
+    window.addBook = addBook;
+    window.saveNewPlan = saveNewPlan;
+    window.deleteBook = deleteBook;
+    window.addProgress = addProgress;
+    window.setTimelineMode = setTimelineMode;
+
+    // 初期化実行 (ページロード時に1回だけGET)
+    setDefaultDates();
+    loadData();
 </script>
 </body>
 </html>
