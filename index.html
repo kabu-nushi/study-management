@@ -243,6 +243,7 @@
             flex-direction: column;
             width: 100px;
             min-width: 100px;
+            padding-bottom: 80px; /* 吹き出し見切れ対策 */
         }
         .gantt-right {
             position: relative;
@@ -250,6 +251,7 @@
             background-image: linear-gradient(90deg, #F3F4F6 1px, transparent 1px);
             background-size: 40px 100%; 
             min-height: 100px;
+            padding-bottom: 80px; /* 吹き出し見切れ対策 */
         }
         .gantt-header {
             height: 40px;
@@ -297,7 +299,7 @@
         }
         .gantt-bar:hover { z-index: 10; background: #C026D3; }
         
-        /* 計画バーの吹き出し */
+        /* 計画バーの吹き出し (下に出す) */
         .plan-tooltip {
             visibility: hidden;
             background-color: #1F2937;
@@ -307,7 +309,7 @@
             padding: 8px 12px;
             position: absolute;
             z-index: 15;
-            bottom: 130%; 
+            top: 130%; 
             left: 50%;
             transform: translateX(-50%);
             opacity: 0;
@@ -321,12 +323,12 @@
         .plan-tooltip::after {
             content: "";
             position: absolute;
-            top: 100%;
+            bottom: 100%;
             left: 50%;
             margin-left: -5px;
             border-width: 5px;
             border-style: solid;
-            border-color: #1F2937 transparent transparent transparent;
+            border-color: transparent transparent #1F2937 transparent; /* 上向きの三角 */
         }
         .gantt-bar:hover .plan-tooltip {
             visibility: visible;
@@ -336,16 +338,16 @@
         /* タイムライン */
         .timeline-scroll-container {
             overflow-x: auto;
-            padding: 40px 20px 20px 20px;
+            padding: 60px 20px 40px 20px;
             background: #FAFAFA;
             border: 1px solid #E5E7EB;
             border-radius: 8px;
             margin-top: 15px;
-            min-height: 250px;
+            min-height: 400px;
         }
         .timeline-track {
             position: relative;
-            height: 200px;
+            height: 250px;
             border-bottom: 3px solid var(--primary);
             margin-bottom: 50px;
         }
@@ -401,6 +403,7 @@
             position: relative;
             z-index: 2;
             cursor: pointer;
+            overflow: hidden;
         }
         .bubble-img { max-width: 75px; max-height: 85px; }
         .bubble-text { display: none; font-size: 0.75em; word-break: break-all; color: #1F2937; }
@@ -515,6 +518,13 @@
 
         <h3 style="margin-top: 30px;">学習スケジュール</h3>
         <p style="font-size:0.8em; color:#666;">※バーにカーソルを合わせると詳細表示。バーを<b>右クリックで個別計画を削除</b>できます。</p>
+        
+        <!-- ガントチャート用の縮尺バー -->
+        <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <label for="ganttScaleSlider" style="font-size:0.85em; font-weight:bold; color: #4B5563;">軸の縮尺:</label>
+            <input type="range" id="ganttScaleSlider" min="2" max="60" value="15" oninput="window.renderGantt()" style="cursor: pointer;">
+        </div>
+
         <div id="ganttContainer"></div>
     </div>
 
@@ -541,11 +551,13 @@
         <p style="font-size:0.8em; color:#666;">※丸い点を右クリックで削除。</p>
         
         <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <button onclick="window.setTimelineMode('all')">すべて</button>
-            <button onclick="window.setTimelineMode('byBook')" class="btn-secondary">参考書ごと</button>
+            <!-- 選択状態がわかるようにID付与・クラス制御 -->
+            <button id="btn-timeline-all" onclick="window.setTimelineMode('all')" class="">すべて</button>
+            <button id="btn-timeline-book" onclick="window.setTimelineMode('byBook')" class="btn-secondary">参考書ごと</button>
             <div style="margin-left: 20px; display: flex; align-items: center; gap: 10px;">
                 <label for="timelineScaleSlider" style="font-size:0.85em; font-weight:bold; color: #4B5563;">軸の縮尺:</label>
-                <input type="range" id="timelineScaleSlider" min="10" max="150" value="35" oninput="window.renderTimeline()" style="cursor: pointer;">
+                <!-- 縮尺レンジを変更 -->
+                <input type="range" id="timelineScaleSlider" min="2" max="60" value="15" oninput="window.renderTimeline()" style="cursor: pointer;">
             </div>
         </div>
 
@@ -577,12 +589,12 @@
         progress: [],
         timeGrid: {},
         notes: {},
-        calendarPlans: {} // 新設：カレンダーの計画用
+        calendarPlans: {} 
     };
 
     let timelineMode = 'all';
     let hasScrolledToToday = false;
-    let saveDebounceTimer = null; // 自動保存の遅延用
+    let saveDebounceTimer = null; 
 
     function updateStatus(text, isError = false) {
         const el = document.getElementById('syncStatus');
@@ -615,7 +627,6 @@
         }
     }
 
-    // オートセーブ機能（短時間に複数回の入力があっても1回にまとめる）
     function saveData() {
         updateStatus("☁️ 変更を保存中...");
         if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
@@ -628,7 +639,7 @@
                 console.error("Firestore PUT Error:", error);
                 updateStatus("⚠️ 保存エラー: " + (error.message.includes("permission") ? "DBアクセス権限がありません" : error.message), true);
             }
-        }, 1500); // 入力後 1.5秒で自動保存
+        }, 1500);
     }
 
     function isJapaneseHoliday(date) {
@@ -672,13 +683,12 @@
         container.innerHTML = '';
         
         const startYear = 2026;
-        const startMonth = 6; // 7月 (0-indexed)
+        const startMonth = 6; 
         const endYear = 2027;
-        const endMonth = 2; // 3月 (0-indexed)
+        const endMonth = 2; 
         
         let y = startYear;
         let m = startMonth;
-        
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         
         while (y < endYear || (y === endYear && m <= endMonth)) {
@@ -701,8 +711,8 @@
             
             const tbody = document.createElement('tbody');
             const firstDay = new Date(y, m, 1);
-            let startDayOfWeek = firstDay.getDay() - 1; // 月曜始まり (0=月, 6=日)
-            if (startDayOfWeek === -1) startDayOfWeek = 6; // 日曜日の場合
+            let startDayOfWeek = firstDay.getDay() - 1; 
+            if (startDayOfWeek === -1) startDayOfWeek = 6; 
             
             const daysInMonth = new Date(y, m + 1, 0).getDate();
             const daysInPrevMonth = new Date(y, m, 0).getDate();
@@ -745,19 +755,17 @@
                     dateNum.innerText = currentCellDate.getDate();
                     td.appendChild(dateNum);
                     
-                    // 3列分(3行分)の計画入力枠を生成
                     for(let k=1; k<=3; k++) {
                         const input = document.createElement('input');
                         input.type = 'text';
                         input.className = 'calendar-plan-input';
-                        input.placeholder = isCurrentMonth ? '' : ''; // 枠だけ用意
+                        input.placeholder = isCurrentMonth ? '' : ''; 
                         const cellKey = `${dateStr}_${k}`;
                         
                         if (appData.calendarPlans[cellKey]) {
                             input.value = appData.calendarPlans[cellKey];
                         }
                         
-                        // 入力変更でオートセーブ
                         input.addEventListener('change', (e) => {
                             appData.calendarPlans[cellKey] = e.target.value;
                             saveData();
@@ -770,7 +778,7 @@
                 if (hasValidDay || i === 0) {
                     tbody.appendChild(tr);
                 }
-                if (date > daysInMonth && i >= 4) break; // 5週・6週目で終わったら抜ける
+                if (date > daysInMonth && i >= 4) break; 
             }
             
             table.appendChild(tbody);
@@ -838,14 +846,13 @@
                     const cellKey = `${dateStr}_${type}_${i}`;
                     input.value = appData.timeGrid[cellKey] || '';
 
-                    // 入力時のバリデーション＆オートセーブ
                     input.addEventListener('input', (e) => {
                         const val = e.target.value;
                         if (val !== '0' && val !== '1') e.target.value = '';
                         updateCellColor(e.target);
                         appData.timeGrid[cellKey] = e.target.value;
                         calcTotal(dateStr, type);
-                        saveData(); // オートセーブに変更
+                        saveData(); 
                     });
 
                     updateCellColor(input);
@@ -866,7 +873,6 @@
                     noteInput.placeholder = "メモ等";
                     noteInput.value = appData.notes[dateStr] || '';
                     
-                    // 備考欄もオートセーブ
                     noteInput.addEventListener('change', (e) => {
                         appData.notes[dateStr] = e.target.value;
                         saveData(); 
@@ -980,7 +986,10 @@
         minTime -= 86400000 * 10; 
         maxTime += 86400000 * 20;
         const totalDays = Math.ceil((maxTime - minTime) / 86400000);
-        const pxPerDay = 40;
+        
+        // スライダーの値を取得
+        const scaleSlider = document.getElementById('ganttScaleSlider');
+        const pxPerDay = scaleSlider ? parseInt(scaleSlider.value, 10) : 15;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'gantt-wrapper';
@@ -1071,6 +1080,18 @@
 
     function setTimelineMode(mode) {
         timelineMode = mode;
+        
+        // ボタンのアクティブ状態のクラスを切り替え
+        const btnAll = document.getElementById('btn-timeline-all');
+        const btnBook = document.getElementById('btn-timeline-book');
+        if (mode === 'all') {
+            btnAll.className = '';
+            btnBook.className = 'btn-secondary';
+        } else {
+            btnAll.className = 'btn-secondary';
+            btnBook.className = '';
+        }
+        
         renderTimeline();
     }
 
@@ -1080,7 +1101,7 @@
         if (appData.progress.length === 0) return;
 
         const scaleSlider = document.getElementById('timelineScaleSlider');
-        const pxPerDay = scaleSlider ? parseInt(scaleSlider.value, 10) : 35;
+        const pxPerDay = scaleSlider ? parseInt(scaleSlider.value, 10) : 15;
 
         const timestamps = appData.progress.map(p => p.timestamp);
         const minTime = Math.min(...timestamps);
@@ -1107,6 +1128,7 @@
         track.style.width = width + 'px';
 
         const placedNodes = []; 
+        const isByBook = (timelineMode === 'byBook');
 
         progressItems.forEach(prog => {
             const book = appData.books.find(b => b.id === prog.bookId);
@@ -1122,15 +1144,26 @@
             node.style.left = leftPx + 'px';
             node.style.bottom = '-7px'; 
 
-            const imgSrc = book && book.image ? book.image : '';
             const bubbleBottomOffset = 20 + (stackLevel * 125); 
             const lineH = bubbleBottomOffset;
+            
+            const imgSrc = book && book.image ? book.image : '';
+            
+            // 参考書ごと(byBook)の場合は画像を隠し、テキストを常時表示する
+            let bubbleContent = '';
+            if (isByBook) {
+                bubbleContent = `<div style="font-size: 0.8em; color: #1F2937; word-break: break-all; text-align: center;">${prog.comment}</div>`;
+            } else {
+                bubbleContent = `
+                    ${imgSrc ? `<img src="${imgSrc}" class="bubble-img">` : '<div class="bubble-img" style="font-size:0.7em;">画像なし</div>'}
+                    <div class="bubble-text">${prog.comment}</div>
+                `;
+            }
 
             node.innerHTML = `
                 <div class="bubble-wrapper" style="bottom: ${bubbleBottomOffset}px;">
                     <div class="bubble">
-                        ${imgSrc ? `<img src="${imgSrc}" class="bubble-img">` : '<div class="bubble-img" style="font-size:0.7em;">画像なし</div>'}
-                        <div class="bubble-text">${prog.comment}</div>
+                        ${bubbleContent}
                     </div>
                 </div>
                 ${stackLevel > 0 ? `<div class="vertical-line" style="height:${lineH}px;"></div>` : ''}
@@ -1194,6 +1227,7 @@
     window.addProgress = addProgress;
     window.setTimelineMode = setTimelineMode;
     window.renderTimeline = renderTimeline;
+    window.renderGantt = renderGantt;
 
     // 初期化実行
     setDefaultDates();
