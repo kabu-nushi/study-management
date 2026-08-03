@@ -509,12 +509,16 @@
             border: 1px solid #D1D5DB;
             border-radius: 8px;
             background: #fff;
-            font-size: 1.05em;
+            font-size: 1.05em !important;
             line-height: 1.6;
             outline: none;
             box-sizing: border-box;
             overflow-y: auto;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        /* メモパッド内の子要素すべてのフォントサイズを一定に保持 */
+        .memo-pad * {
+            font-size: 1.05em !important;
         }
         .memo-pad:focus {
             border-color: var(--primary);
@@ -907,7 +911,6 @@
         }
     }
 
-    // 学習計画のガントチャートを現在日にスクロールさせる
     window.scrollToCurrentGantt = function() {
         const wrapper = document.querySelector('.gantt-wrapper');
         if (!wrapper) return;
@@ -919,7 +922,6 @@
         const daysFromStart = (now - minTime) / 86400000;
         const scrollPos = daysFromStart * pxPerDay;
         
-        // 画面中央よりやや左側に現在月が来るように調整
         wrapper.scrollLeft = scrollPos - 250; 
     };
 
@@ -943,7 +945,6 @@
             setTimeout(window.scrollToToday, 50); 
         }
         if (tabId === 'plan') {
-            // 学習計画タブを開いた際に自動スクロール
             setTimeout(window.scrollToCurrentGantt, 50);
         }
     }
@@ -1402,7 +1403,6 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'gantt-wrapper';
         
-        // スクロール計算用に属性をセット
         wrapper.setAttribute('data-min-time', minTime);
         wrapper.setAttribute('data-px-per-day', pxPerDay);
 
@@ -1515,7 +1515,6 @@
         wrapper.appendChild(rightPane);
         container.appendChild(wrapper);
 
-        // レンダリング直後に現在位置へスクロール（すでにタブが開いている場合用）
         if (document.getElementById('tab-plan').classList.contains('active')) {
             setTimeout(window.scrollToCurrentGantt, 50);
         }
