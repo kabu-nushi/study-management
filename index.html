@@ -20,7 +20,7 @@
             color: #333;
         }
         .container {
-            max-width: 1400px; 
+            max-width: 98%; /* 画面幅を広く使う */
             margin: 0 auto;
             background: var(--surface);
             padding: 20px;
@@ -92,6 +92,7 @@
             height: 110px;
             vertical-align: top;
             padding: 4px;
+            box-sizing: border-box;
         }
         .out-of-month {
             background-color: #F0F0F0;
@@ -112,6 +113,10 @@
         }
         .calendar-plan-input:focus {
             border-bottom: 1px solid var(--primary);
+        }
+        .today-cell {
+            border: 3px solid var(--primary) !important;
+            background-color: #EEF2FF;
         }
 
         /* 時間管理テーブル */
@@ -143,35 +148,53 @@
         .time-table th, .time-table td {
             border-bottom: 1px solid #E5E7EB;
             border-right: 1px solid #E5E7EB;
-            padding: 4px;
+            padding: 0; /* ぎっしりさせるためにゼロに */
             text-align: center;
         }
+        /* インプットセルをぎっしり敷き詰める */
         .cell-input {
-            width: 16px;
-            height: 20px;
+            width: 20px;
+            height: 24px;
             text-align: center;
-            border: 1px solid #E5E7EB;
+            border: none;
             outline: none;
             font-weight: bold;
             font-size: 0.9em;
-            border-radius: 2px;
+            border-radius: 0;
+            margin: 0;
+            padding: 0;
+            cursor: default;
+            caret-color: transparent; /* カーソルを非表示 */
+            box-sizing: border-box;
         }
-        .bg-red { background-color: #FCA5A5; color: transparent; }
-        .bg-blue { background-color: #93C5FD; color: transparent; }
+        .cell-input:focus {
+            box-shadow: inset 0 0 0 2px #333; /* 選択されている枠 */
+        }
+        .bg-red { background-color: #E06666; color: transparent; }
+        .bg-blue { background-color: #6D9EEB; color: transparent; }
         .row-plan { background-color: #F9FAFB; }
         
         .note-input {
             width: 280px; 
-            min-height: 40px;
+            height: 100%;
+            min-height: 48px;
             padding: 6px;
-            border: 1px solid #D1D5DB;
-            border-radius: 3px;
+            border: none;
             font-size: 0.95em;
             font-family: inherit;
             resize: vertical; 
             box-sizing: border-box;
+            background: transparent;
         }
-        .row-today td { border-top: 2px solid var(--primary); border-bottom: 2px solid var(--primary); }
+        .note-input:focus { outline: 1px solid var(--primary); }
+
+        /* 今日の枠線（計画の上、実績の下のみ） */
+        .row-today-plan td { border-top: 2px solid var(--primary); }
+        .row-today-actual td { border-bottom: 2px solid var(--primary); }
+        .row-today-plan td:first-child { border-left: 2px solid var(--primary); }
+        .row-today-actual td:first-child { border-left: 2px solid var(--primary); }
+        .row-today-plan td:last-child { border-right: 2px solid var(--primary); }
+        .row-today-actual td:last-child { border-right: 2px solid var(--primary); }
 
         /* 曜日色分け共通 */
         .day-sat { color: #2563EB; font-weight: bold; }
@@ -213,7 +236,6 @@
             display: flex;
             gap: 2px;
             justify-content: center;
-            margin-top: 2px;
         }
         .btn-sort-group button {
             padding: 1px 5px;
@@ -259,12 +281,13 @@
             border-right: 2px solid #E5E7EB;
             display: flex;
             flex-direction: column;
-            width: 140px;
-            min-width: 140px;
+            width: 160px;
+            min-width: 160px;
             padding-bottom: 80px; 
         }
         .gantt-right {
             position: relative;
+            flex-grow: 1;
             background: #fff;
             background-image: linear-gradient(90deg, #F3F4F6 1px, transparent 1px);
             background-size: 40px 100%; 
@@ -298,39 +321,46 @@
             padding: 0 8px;
             border-bottom: 1px solid #C7D2FE;
         }
+        .subj-color-picker {
+            border: none;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            background: transparent;
+        }
         .gantt-subject-row-right {
             height: 32px;
             background-color: #F5F3FF;
             border-bottom: 1px solid #E0E7FF;
         }
         .gantt-row {
-            height: 90px;
+            height: 36px; /* 高さを抑えて一覧性を良くする */
             display: flex;
             align-items: center;
             border-bottom: 1px solid #F3F4F6;
             position: relative;
         }
         .gantt-cover {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
-            text-align: center;
-            padding: 4px;
+            padding: 0 8px;
             box-sizing: border-box;
         }
-        .gantt-cover img { max-width: 50px; max-height: 50px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         .book-title-sub {
-            font-size: 0.75em;
+            font-size: 0.8em;
             font-weight: bold;
             color: #374151;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 130px;
-            margin-top: 2px;
+            max-width: 100px;
         }
         .gantt-bar {
             position: absolute;
             height: 24px;
-            background: #D946EF;
             color: white;
             font-size: 0.8em;
             line-height: 24px;
@@ -344,7 +374,7 @@
             z-index: 5;
             box-sizing: border-box;
         }
-        .gantt-bar:hover { z-index: 10; background: #C026D3; overflow: visible; }
+        .gantt-bar:hover { z-index: 10; filter: brightness(1.1); overflow: visible; }
         
         .plan-tooltip {
             visibility: hidden;
@@ -474,6 +504,11 @@
             color: #6B7280;
             white-space: nowrap;
         }
+
+        /* ダイアログ */
+        dialog::backdrop {
+            background: rgba(0,0,0,0.4);
+        }
     </style>
 </head>
 <body>
@@ -500,21 +535,20 @@
             <span>時間記録 (0=赤, 1=青/30分)</span>
             <button onclick="window.scrollToToday()" class="btn-secondary" style="font-size:0.8em;">「今日」に移動</button>
         </h3>
-        <p style="font-size:0.8em; color:#666; margin-top:0;">※編集内容は自動で保存されます。</p>
+        <p style="font-size:0.8em; color:#666; margin-top:0;">※←→↑↓キーで移動。0または1を押すと直接上書きして次に移動します。</p>
         
         <div class="table-wrapper" id="timeTableWrapper">
             <table class="time-table" id="timeTable">
                 <thead>
                     <tr>
-                        <th rowspan="2">日付</th>
-                        <th rowspan="2">曜日</th>
-                        <th rowspan="2">区分</th>
+                        <th rowspan="2" style="min-width: 70px;">日付</th>
+                        <th rowspan="2" style="min-width: 30px;">曜日</th>
                         <th colspan="2">6時</th><th colspan="2">7時</th><th colspan="2">8時</th><th colspan="2">9時</th>
                         <th colspan="2">10時</th><th colspan="2">11時</th><th colspan="2">12時</th><th colspan="2">13時</th>
                         <th colspan="2">14時</th><th colspan="2">15時</th><th colspan="2">16時</th><th colspan="2">17時</th>
                         <th colspan="2">18時</th><th colspan="2">19時</th><th colspan="2">20時</th><th colspan="2">21時</th>
                         <th colspan="2">22時</th><th colspan="2">23時</th><th colspan="2">24時</th><th colspan="2">25時</th>
-                        <th rowspan="2">合計</th>
+                        <th rowspan="2" style="min-width: 50px;">合計</th>
                         <th rowspan="2">備考</th>
                     </tr>
                     <tr>
@@ -575,7 +609,7 @@
         </div>
 
         <h3 style="margin-top: 30px;">学習スケジュール</h3>
-        <p style="font-size:0.8em; color:#666;">※教科や参考書名の横にある<b>▲▼ボタン</b>で並び順を変更できます。バー右クリックで個別計画を削除。</p>
+        <p style="font-size:0.8em; color:#666;">※教科の横にあるカラーピッカーで色を変更できます。バーを右クリックで計画を編集・削除。</p>
         
         <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
             <label for="ganttScaleSlider" style="font-size:0.85em; font-weight:bold; color: #4B5563;">軸の縮尺:</label>
@@ -621,6 +655,31 @@
     </div>
 </div>
 
+<!-- 計画編集モーダル -->
+<dialog id="planEditModal" style="border:none; border-radius:8px; padding:20px; box-shadow:0 4px 15px rgba(0,0,0,0.3); width: 350px;">
+    <h3 style="margin-top:0; color:var(--primary);">計画の編集</h3>
+    <input type="hidden" id="editPlanId">
+    <div class="form-group">
+        <label>目的</label>
+        <input type="text" id="editPlanObjective">
+    </div>
+    <div class="form-group">
+        <label>開始日</label>
+        <input type="date" id="editPlanStartDate">
+    </div>
+    <div class="form-group">
+        <label>終了日</label>
+        <input type="date" id="editPlanEndDate">
+    </div>
+    <div style="display:flex; gap:10px; margin-top:25px; justify-content: space-between;">
+        <div style="display:flex; gap:10px;">
+            <button onclick="window.savePlanEdit()">保存</button>
+            <button onclick="document.getElementById('planEditModal').close()" class="btn-secondary">キャンセル</button>
+        </div>
+        <button onclick="window.deletePlanEdit()" class="btn-danger">削除</button>
+    </div>
+</dialog>
+
 <!-- Cloud Firestore (v10) の読み込み -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -645,11 +704,31 @@
         progress: [],
         timeGrid: {},
         notes: {},
-        calendarPlans: {} 
+        calendarPlans: {},
+        subjectColors: {} // 教科の色の保存用
     };
 
     let timelineMode = 'byBook'; 
     let saveDebounceTimer = null; 
+    
+    const DEFAULT_COLORS = ['#D946EF', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    let colorIndex = 0;
+
+    function getSubjectColor(subject) {
+        appData.subjectColors = appData.subjectColors || {};
+        if (!appData.subjectColors[subject]) {
+            appData.subjectColors[subject] = DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length];
+            colorIndex++;
+        }
+        return appData.subjectColors[subject];
+    }
+
+    window.changeSubjectColor = function(subject, color) {
+        appData.subjectColors = appData.subjectColors || {};
+        appData.subjectColors[subject] = color;
+        saveData();
+        renderGantt();
+    };
 
     // --- 画像リサイズ・圧縮ユーティリティ ---
     function compressImageDataUrl(dataUrl, maxWidth = 120, quality = 0.5) {
@@ -705,11 +784,17 @@
                     progress: data.progress || [],
                     timeGrid: data.timeGrid || {},
                     notes: data.notes || {},
-                    calendarPlans: data.calendarPlans || {}
+                    calendarPlans: data.calendarPlans || {},
+                    subjectColors: data.subjectColors || {}
                 };
             }
             updateStatus("☁️ 同期済み");
             renderAll();
+            
+            // 初回読み込み時に現在の月にスクロールさせる
+            if (document.getElementById('tab-calendar').classList.contains('active')) {
+                setTimeout(scrollToCurrentMonth, 100);
+            }
         } catch (error) {
             console.error("Firestore GET Error:", error);
             updateStatus("⚠️ 読込エラー: " + (error.message.includes("permission") ? "DBアクセス権限がありません" : error.message), true);
@@ -761,6 +846,13 @@
         return false;
     }
 
+    function scrollToCurrentMonth() {
+        const currentMonthElem = document.getElementById('current-month-cal');
+        if (currentMonthElem) {
+            currentMonthElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
     function switchTab(tabId) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -774,6 +866,9 @@
         
         document.getElementById('tab-' + tabId).classList.add('active');
 
+        if (tabId === 'calendar') {
+            setTimeout(scrollToCurrentMonth, 50);
+        }
         if (tabId === 'time') {
             setTimeout(window.scrollToToday, 50); 
         }
@@ -852,10 +947,16 @@
         let y = startYear;
         let m = startMonth;
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const today = new Date();
         
         while (y < endYear || (y === endYear && m <= endMonth)) {
             const monthDiv = document.createElement('div');
             monthDiv.className = 'calendar-month';
+            
+            // 当月の要素にIDを付与してスクロールの目印にする
+            if (y === today.getFullYear() && m === today.getMonth()) {
+                monthDiv.id = 'current-month-cal';
+            }
             
             const header = document.createElement('h2');
             header.innerHTML = `<span class="month-num">${m + 1}</span> ${monthNames[m]} ${y}`;
@@ -912,6 +1013,13 @@
                     if (dayOfWeek === 6 && !isHoliday) dayClass = 'day-sat';
                     if (dayOfWeek === 0 || isHoliday) dayClass = 'day-sun-holiday';
                     
+                    // 今日の日付の枠色付け
+                    if (currentCellDate.getFullYear() === today.getFullYear() && 
+                        currentCellDate.getMonth() === today.getMonth() && 
+                        currentCellDate.getDate() === today.getDate()) {
+                        td.classList.add('today-cell');
+                    }
+
                     const dateNum = document.createElement('div');
                     dateNum.className = 'calendar-date-num ' + dayClass;
                     dateNum.innerText = currentCellDate.getDate();
@@ -963,7 +1071,7 @@
             currentDate.setDate(today.getDate() + dayOffset);
             
             const dateStr = currentDate.toISOString().split('T')[0];
-            const dateLabel = `${currentDate.getMonth()+1}月${currentDate.getDate()}日`;
+            const dateLabel = `${currentDate.getMonth()+1}/${currentDate.getDate()}`;
             
             const dayOfWeekNum = currentDate.getDay();
             const isHoliday = isJapaneseHoliday(currentDate);
@@ -973,16 +1081,25 @@
 
             const isToday = (dateStr === todayStrLocal);
 
+            // 区分列なしで2行出力
             ['計画', '実績'].forEach(type => {
                 const tr = document.createElement('tr');
                 if (type === '計画') tr.className = 'row-plan';
-                if (isToday) tr.classList.add('row-today');
-                if (isToday && type === '計画') tr.id = 'row-today-target';
+                
+                if (isToday) {
+                    if (type === '計画') {
+                        tr.classList.add('row-today-plan');
+                        tr.id = 'row-today-target';
+                    }
+                    if (type === '実績') {
+                        tr.classList.add('row-today-actual');
+                    }
+                }
 
                 if (type === '計画') {
                     const tdDate = document.createElement('td');
                     tdDate.rowSpan = 2;
-                    tdDate.innerHTML = isToday ? `<b>${dateLabel}<br>(今日)</b>` : dateLabel;
+                    tdDate.innerHTML = isToday ? `<b style="color:var(--primary)">${dateLabel}<br>(今日)</b>` : dateLabel;
                     tr.appendChild(tdDate);
 
                     const tdDay = document.createElement('td');
@@ -991,10 +1108,6 @@
                     tdDay.className = dayClass;
                     tr.appendChild(tdDay);
                 }
-
-                const tdType = document.createElement('td');
-                tdType.innerText = type;
-                tr.appendChild(tdType);
 
                 for (let i = 1; i <= 40; i++) {
                     const td = document.createElement('td');
@@ -1006,13 +1119,54 @@
                     const cellKey = `${dateStr}_${type}_${i}`;
                     input.value = appData.timeGrid[cellKey] || '';
 
-                    input.addEventListener('input', (e) => {
-                        const val = e.target.value;
-                        if (val !== '0' && val !== '1') e.target.value = '';
-                        updateCellColor(e.target);
-                        appData.timeGrid[cellKey] = e.target.value;
-                        calcTotal(dateStr, type);
-                        saveData(); 
+                    // スプレッドシートライクなキーボード移動・上書き処理
+                    input.addEventListener('keydown', (e) => {
+                        const row = input.closest('tr');
+                        const allRows = Array.from(tbody.querySelectorAll('tr'));
+                        const rowIndex = allRows.indexOf(row);
+                        const inputsInRow = Array.from(row.querySelectorAll('.cell-input'));
+                        const colIndex = inputsInRow.indexOf(input);
+
+                        if (e.key === 'ArrowRight') {
+                            if (colIndex < inputsInRow.length - 1) inputsInRow[colIndex + 1].focus();
+                            e.preventDefault();
+                        } else if (e.key === 'ArrowLeft') {
+                            if (colIndex > 0) inputsInRow[colIndex - 1].focus();
+                            e.preventDefault();
+                        } else if (e.key === 'ArrowDown') {
+                            if (rowIndex < allRows.length - 1) {
+                                const nextRowInputs = Array.from(allRows[rowIndex + 1].querySelectorAll('.cell-input'));
+                                if (nextRowInputs[colIndex]) nextRowInputs[colIndex].focus();
+                            }
+                            e.preventDefault();
+                        } else if (e.key === 'ArrowUp') {
+                            if (rowIndex > 0) {
+                                const prevRowInputs = Array.from(allRows[rowIndex - 1].querySelectorAll('.cell-input'));
+                                if (prevRowInputs[colIndex]) prevRowInputs[colIndex].focus();
+                            }
+                            e.preventDefault();
+                        } else if (e.key === '0' || e.key === '1') {
+                            // 移動先の状態で入力すると上書きして次に移動
+                            input.value = e.key;
+                            appData.timeGrid[cellKey] = e.key;
+                            updateCellColor(input);
+                            calcTotal(dateStr, type);
+                            saveData();
+                            if (colIndex < inputsInRow.length - 1) inputsInRow[colIndex + 1].focus();
+                            e.preventDefault();
+                        } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                            input.value = '';
+                            appData.timeGrid[cellKey] = '';
+                            updateCellColor(input);
+                            calcTotal(dateStr, type);
+                            saveData();
+                            if (e.key === 'Backspace' && colIndex > 0) inputsInRow[colIndex - 1].focus();
+                            e.preventDefault();
+                        } else if (e.key === 'Tab') {
+                            // デフォルトのTab動作を許可
+                        } else {
+                            e.preventDefault(); // 0と1以外の入力をブロック
+                        }
                     });
 
                     updateCellColor(input);
@@ -1029,7 +1183,6 @@
                     tdNote.rowSpan = 2;
                     const noteInput = document.createElement('textarea');
                     noteInput.className = 'note-input';
-                    noteInput.rows = 2;
                     noteInput.placeholder = "メモ等";
                     noteInput.value = appData.notes[dateStr] || '';
                     
@@ -1126,6 +1279,40 @@
         }
     }
 
+    // --- 計画編集モーダル関連 ---
+    window.openPlanEditModal = function(planId) {
+        const plan = appData.plans.find(p => p.id === planId);
+        if (!plan) return;
+        document.getElementById('editPlanId').value = plan.id;
+        document.getElementById('editPlanObjective').value = plan.objective || '';
+        document.getElementById('editPlanStartDate').value = plan.startDate || '';
+        document.getElementById('editPlanEndDate').value = plan.endDate || '';
+        document.getElementById('planEditModal').showModal();
+    };
+
+    window.savePlanEdit = function() {
+        const id = document.getElementById('editPlanId').value;
+        const plan = appData.plans.find(p => p.id === id);
+        if (plan) {
+            plan.objective = document.getElementById('editPlanObjective').value;
+            plan.startDate = document.getElementById('editPlanStartDate').value;
+            plan.endDate = document.getElementById('editPlanEndDate').value;
+            saveData();
+            renderGantt();
+        }
+        document.getElementById('planEditModal').close();
+    };
+
+    window.deletePlanEdit = function() {
+        const id = document.getElementById('editPlanId').value;
+        if (confirm('この計画を削除しますか？')) {
+            appData.plans = appData.plans.filter(p => p.id !== id);
+            saveData();
+            renderGantt();
+            document.getElementById('planEditModal').close();
+        }
+    };
+
     function renderGantt() {
         const container = document.getElementById('ganttContainer');
         container.innerHTML = '';
@@ -1156,7 +1343,9 @@
         rightPane.className = 'gantt-right';
         
         const rightPaneWidth = totalDays * pxPerDay + 300; 
-        rightPane.style.width = rightPaneWidth + 'px';
+        // 途切れないように minWidth と width を設定
+        rightPane.style.minWidth = rightPaneWidth + 'px';
+        rightPane.style.backgroundSize = `${pxPerDay * 2}px 100%`; // グリッド幅の調整
 
         const rightHeader = document.createElement('div');
         rightHeader.className = 'gantt-header';
@@ -1178,10 +1367,15 @@
         const { subjects, grouped } = getGroupedBooks();
 
         subjects.forEach(subject => {
+            const subjColor = getSubjectColor(subject);
             const subjLeftRow = document.createElement('div');
             subjLeftRow.className = 'gantt-subject-row-left';
             subjLeftRow.innerHTML = `
-                <span>【${subject}】</span>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <input type="color" class="subj-color-picker" value="${subjColor}" 
+                        onchange="window.changeSubjectColor('${subject}', this.value)" title="教科の色を変更">
+                    <span>【${subject}】</span>
+                </div>
                 <div class="btn-sort-group">
                     <button onclick="window.moveSubject('${subject}', -1)" title="教科を上に移動">▲</button>
                     <button onclick="window.moveSubject('${subject}', 1)" title="教科を下に移動">▼</button>
@@ -1197,9 +1391,9 @@
                 const bookPlans = appData.plans.filter(p => p.bookId === book.id);
                 const lRow = document.createElement('div');
                 lRow.className = 'gantt-row';
+                // 画像を削除し、参考書名だけを表示して一覧性を高める
                 lRow.innerHTML = `
                     <div class="gantt-cover">
-                        ${book.image ? `<img src="${book.image}">` : '<div style="font-size:0.65em;color:#999;">画像なし</div>'}
                         <div class="book-title-sub" title="${book.title}">${book.title}</div>
                         <div class="btn-sort-group">
                             <button onclick="window.moveBook('${book.id}', -1)" title="参考書を上に移動">▲</button>
@@ -1223,8 +1417,7 @@
                         bar.className = 'gantt-bar';
                         bar.style.left = leftPx + 'px';
                         bar.style.width = widthPx + 'px';
-                        
-                        // 表示文字を参考書名から「目的」へ変更
+                        bar.style.background = getSubjectColor(book.subject || 'その他');
                         bar.innerText = plan.objective || '目的未設定';
 
                         const tooltip = document.createElement('div');
@@ -1238,13 +1431,10 @@
                         tooltip.innerHTML = `<strong>【目的】</strong><br>${objectiveText}<br><br><strong>【期間】</strong><br>${plan.startDate} 〜 ${plan.endDate}`;
                         bar.appendChild(tooltip);
 
+                        // 右クリックで編集モーダルを開く
                         bar.addEventListener('contextmenu', (e) => {
                             e.preventDefault();
-                            if(confirm(`この計画を削除しますか？\n目的: ${plan.objective || 'なし'}\n期間: ${plan.startDate} 〜 ${plan.endDate}`)) {
-                                appData.plans = appData.plans.filter(p => p.id !== plan.id);
-                                saveData(); 
-                                renderGantt();
-                            }
+                            window.openPlanEditModal(plan.id);
                         });
                         rRow.appendChild(bar);
                     }
